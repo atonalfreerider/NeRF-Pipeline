@@ -30,7 +30,7 @@ public class Colmap2Nerf
         }
     }
 
-    public void Convert()
+    public void Convert(string frameNumber)
     {
         // read cameras.txt
         string camerasTxt = File.ReadAllText(ColmapFolder + "/cameras.txt");
@@ -68,13 +68,13 @@ public class Colmap2Nerf
                 string cameraName = parts[0];
                 CamData camData = cameras[cameraName];
 
-                string imageName = Path.Combine(ColmapFolder, parts[9]);
+                string imageName = Path.Combine(ColmapFolder, frameNumber, parts[9]);
 
                 Quaternion rot = new Quaternion(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3]),
                     float.Parse(parts[4]));
 
                 Vector3 pos = new Vector3(float.Parse(parts[5]), float.Parse(parts[6]), float.Parse(parts[7]));
-                
+
                 Matrix4x4 viewMatrix = Matrix4x4.CreateFromQuaternion(rot);
                 viewMatrix.Translation = pos;
 
@@ -84,7 +84,7 @@ public class Colmap2Nerf
                     camData.width,
                     camData.height,
                     camData.fx);
-                
+
                 frames.Add(nerfFrame);
             }
         }
@@ -99,9 +99,8 @@ public class Colmap2Nerf
         {
             File.Delete(outPath);
         }
-        
+
         string cameraJsonString = JsonConvert.SerializeObject(container, Formatting.Indented);
         File.WriteAllText(outPath, cameraJsonString);
-        
     }
 }
