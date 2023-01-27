@@ -39,7 +39,8 @@ public class Program
     }
 
     /// <summary>
-    /// Iterate through all .mp4 files in the input folder and extract the frame number from each video and write each frame to the output folder
+    /// If a folder with videos: iterate through all .mp4 files in the input folder and extract the frame number from each video and write each frame to the output folder
+    /// If a folder with images: copy and run Colmap and NeRF
     /// </summary>
     /// <param name="args"></param>
     static void NerfMedia(Args args)
@@ -95,8 +96,7 @@ public class Program
         ColmapRunner colmapRunner = new ColmapRunner(args.OutputFolderPath, imagesPath);
 
         colmapRunner.RunColmapAutomatic();
-        //colmapRunner.Efficient();
-        colmapRunner.MapAndConvert();
+        colmapRunner.Convert();
 
         Colmap2Nerf colmap2Nerf = new Colmap2Nerf(outputFolderPath);
         colmap2Nerf.Convert(imagesPath);
