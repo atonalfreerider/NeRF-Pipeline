@@ -30,7 +30,7 @@ public class Colmap2Nerf
         }
     }
 
-    public void Convert(string frameNumber)
+    public void Convert(string imageDir)
     {
         // read cameras.txt
         string camerasTxt = File.ReadAllText(ColmapFolder + "/cameras.txt");
@@ -52,7 +52,6 @@ public class Colmap2Nerf
             cameras.Add(cameraName, new CamData(cameraName, width, height, fx, cx, cy));
         }
 
-
         // read images.txt
         string imagesTxt = File.ReadAllText(ColmapFolder + "/images.txt");
 
@@ -61,14 +60,14 @@ public class Colmap2Nerf
         List<NerfSerializer.NerfFrame> frames = new();
         foreach (string line in lines)
         {
-            if (line.EndsWith(".png"))
+            if (line.EndsWith(".png") || line.EndsWith(".jpg"))
             {
                 string[] parts = line.Split(' ');
 
-                string cameraName = parts[0];
+                string cameraName = parts[8];
                 CamData camData = cameras[cameraName];
 
-                string imageName = Path.Combine(ColmapFolder, frameNumber, parts[9]);
+                string imageName = Path.Combine(ColmapFolder, imageDir, parts[9]);
 
                 Quaternion rot = new Quaternion(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3]),
                     float.Parse(parts[4]));

@@ -49,7 +49,7 @@ public class Program
 
         string imagesPath;
 
-        if (args.TimeStampInSeconds <= double.Epsilon)
+        if (Directory.GetFiles(inputPath, "*.mp4").Any())
         {
             double timeStampInSeconds = args.TimeStampInSeconds;
 
