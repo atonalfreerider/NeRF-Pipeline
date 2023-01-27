@@ -1,6 +1,5 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
-using System.Diagnostics;
 using System.Drawing;
 using GleamTech.VideoUltimate;
 
@@ -58,95 +57,27 @@ public class Program
         // iterate through all .mp4 files in the input folder
         foreach (string filePath in Directory.GetFiles(inputPath, "*.mp4"))
         {
-            /*
             if (!Path.GetFileNameWithoutExtension(filePath).EndsWith("03") &&
                 !Path.GetFileNameWithoutExtension(filePath).EndsWith("05") &&
                 !Path.GetFileNameWithoutExtension(filePath).EndsWith("12") &&
                 !Path.GetFileNameWithoutExtension(filePath).EndsWith("15") &&
                 !Path.GetFileNameWithoutExtension(filePath).EndsWith("18") &&
                 !Path.GetFileNameWithoutExtension(filePath).EndsWith("20")) continue;
-*/
 
             // extract the frame number from each video and write each frame to the output folder
             ExtractFrame(filePath, outputFolderPath, timeStampInSeconds);
         }
 
-        RunColmap(args, frameFolderName);
+        ColmapRunner colmapRunner = new ColmapRunner(args.OutputFolderPath, frameFolderName);
+
+        colmapRunner.RunColmapAutomatic();
+        //colmapRunner.Efficient();
+        colmapRunner.MapAndConvert();
 
         Colmap2Nerf colmap2Nerf = new Colmap2Nerf(outputFolderPath);
         colmap2Nerf.Convert(frameFolderName);
-    }
-
-    static void RunColmap(Args args, string frameFolderName)
-    {
-        string dbPath = Path.Combine(args.OutputFolderPath, "database.db");
-
-        if (File.Exists(dbPath))
-        {
-            File.Delete(dbPath);
-        }
-
-        string imagesPath = Path.Combine(args.OutputFolderPath, frameFolderName);
-        string outPath = Path.Combine(args.OutputFolderPath, "out");
-        if(Directory.Exists(outPath))
-        {
-            Directory.Delete(outPath, true);
-        }
-
-        Directory.CreateDirectory(outPath);
-
-        // works but is slow
-        string cmd0 = $"automatic_reconstructor --image_path {imagesPath} --workspace_path {args.OutputFolderPath}";
-
-        using Process colmapProcess0 = new()
-        {
-            StartInfo =
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                FileName = "colmap",
-                Arguments = cmd0
-            }
-        };
-
-        colmapProcess0.Start();
-        colmapProcess0.WaitForExit();
-
-        string cmd1 = $"mapper --database_path={dbPath} --image_path={imagesPath} --output_path={outPath}";
-
-        using Process colmapProcess1 = new()
-        {
-            StartInfo =
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                FileName = "colmap",
-                Arguments = cmd1
-            }
-        };
-
-        colmapProcess1.Start();
-        colmapProcess1.WaitForExit();
-
-        string cmd2 =
-            $"model_converter --input_path={Path.Combine(outPath, "0")} --output_path={args.OutputFolderPath} --output_type=TXT";
-
-        using Process colmapProcess2 = new()
-        {
-            StartInfo =
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                FileName = "colmap",
-                Arguments = cmd2
-            }
-        };
-
-        colmapProcess2.Start();
-        colmapProcess2.WaitForExit();
+        
+        
     }
 
     static void ExtractFrame(string filePath, string outputFolderPath, double timeStampInSeconds)
@@ -167,64 +98,5 @@ public class Program
     static int RoundDoubleToInt(double value)
     {
         return (int)Math.Round(value, MidpointRounding.AwayFromZero);
-    }
-
-    /// <summary>
-    /// Doesn't converge, even though it's the same process as automatic
-    /// </summary>
-    static void Efficient(string imagesPath, string dbPath, string outputFolderPath)
-    {
-        // works but is slow
-        string cmd0 = $"feature_extractor --image_path {imagesPath} --database_path {dbPath}";
-
-        using Process colmapProcess0 = new()
-        {
-            StartInfo =
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                FileName = "colmap",
-                Arguments = cmd0
-            }
-        };
-
-        colmapProcess0.Start();
-        colmapProcess0.WaitForExit();
-
-        string cmd1 = $"exhaustive_matcher --database_path {dbPath}";
-
-        using Process colmapProcess1 = new()
-        {
-            StartInfo =
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                FileName = "colmap",
-                Arguments = cmd1
-            }
-        };
-
-        colmapProcess1.Start();
-        colmapProcess1.WaitForExit();
-
-        string cmd2 = $"mapper --image_path {imagesPath} --database_path {dbPath} --output_path {outputFolderPath}";
-
-
-        using Process colmapProcess2 = new()
-        {
-            StartInfo =
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                FileName = "colmap",
-                Arguments = cmd2
-            }
-        };
-
-        colmapProcess2.Start();
-        colmapProcess2.WaitForExit();
     }
 }
