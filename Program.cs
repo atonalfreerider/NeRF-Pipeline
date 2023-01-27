@@ -11,6 +11,8 @@ public class Program
         public string OutputFolderPath { get; set; }
 
         public double TimeStampInSeconds { get; set; }
+        
+        public string NerfExePath { get; set; }
     }
 
     public static void Main(string[] args)
@@ -21,7 +23,9 @@ public class Program
 
             new Argument<string>("OutputFolderPath"),
 
-            new Option<double>("--timeStampInSeconds", "The frame number to extract")
+            new Option<double>("--timeStampInSeconds", "The frame number to extract"),
+            
+            new Option<string>("--nerfExePath", "The path to the nerf executable")
         };
 
         rootCommand.Description = "Video to image converter";
@@ -57,13 +61,6 @@ public class Program
         // iterate through all .mp4 files in the input folder
         foreach (string filePath in Directory.GetFiles(inputPath, "*.mp4"))
         {
-            if (!Path.GetFileNameWithoutExtension(filePath).EndsWith("03") &&
-                !Path.GetFileNameWithoutExtension(filePath).EndsWith("05") &&
-                !Path.GetFileNameWithoutExtension(filePath).EndsWith("12") &&
-                !Path.GetFileNameWithoutExtension(filePath).EndsWith("15") &&
-                !Path.GetFileNameWithoutExtension(filePath).EndsWith("18") &&
-                !Path.GetFileNameWithoutExtension(filePath).EndsWith("20")) continue;
-
             // extract the frame number from each video and write each frame to the output folder
             ExtractFrame(filePath, outputFolderPath, timeStampInSeconds);
         }
@@ -77,7 +74,8 @@ public class Program
         Colmap2Nerf colmap2Nerf = new Colmap2Nerf(outputFolderPath);
         colmap2Nerf.Convert(frameFolderName);
         
-        
+        NerfRunner nerfRunner = new NerfRunner(args.NerfExePath, outputFolderPath);
+        nerfRunner.RunNerf();
     }
 
     static void ExtractFrame(string filePath, string outputFolderPath, double timeStampInSeconds)
