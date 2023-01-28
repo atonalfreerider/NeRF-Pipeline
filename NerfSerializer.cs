@@ -1,9 +1,7 @@
 using System.Numerics;
 
-public class NerfSerializer
+public abstract class NerfSerializer
 {
-    readonly string jsonPath;
-
     [Serializable]
     public class Container
     {
@@ -33,7 +31,6 @@ public class NerfSerializer
         public float k1 = 0f;
         public float k2 = 0f;
         public float k3 = 0f;
-
         public float k4 = 0f;
 
         // these values are used by OPENCV for distortion
@@ -53,7 +50,12 @@ public class NerfSerializer
             string file_path,
             float[][] transform_matrix,
             float w, float h,
-            float fl_x)
+            float fl_x,
+            float fl_y,
+            Vector4 k,
+            Vector2 distortion,
+            float sharpness)
+
         {
             this.file_path = file_path;
             this.transform_matrix = transform_matrix;
@@ -63,15 +65,17 @@ public class NerfSerializer
             this.w = w;
             this.h = h;
             this.fl_x = fl_x;
-            fl_y = fl_x * h / w;
+            this.fl_y = fl_y;
+            k1 = k.W;
+            k2 = k.X;
+            k3 = k.Y;
+            k4 = k.Z;
+            p1 = distortion.X;
+            p2 = distortion.Y;
+            this.sharpness = sharpness;
         }
     }
 
-    public NerfSerializer(string path)
-    {
-        jsonPath = path;
-    }
-    
     public static float[][] Matrix4X4toFloatArray(Matrix4x4 matrix4X4)
     {
         float[][] array = new float[4][];

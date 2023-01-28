@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Newtonsoft.Json;
 using OpenCvSharp;
 
@@ -17,17 +17,24 @@ public class Colmap2Nerf
         public int width;
         public int height;
         public float fx;
+        public float fy;
         public int cx;
         public int cy;
+        public Vector4 k;
+        public Vector2 distortion;
 
-        public CamData(string camName, int width, int height, float fx, int cx, int cy)
+        public CamData(string camName, int width, int height, float fx, float fy, int cx, int cy, Vector4 k,
+            Vector2 distortion)
         {
             this.camName = camName;
             this.width = width;
             this.height = height;
             this.fx = fx;
+            this.fy = fy;
             this.cx = cx;
             this.cy = cy;
+            this.k = k;
+            this.distortion = distortion;
         }
     }
 
@@ -46,27 +53,23 @@ public class Colmap2Nerf
             string cameraName = cameraLineSplit[0];
             string cameraType = cameraLineSplit[1];
 
-            if (cameraType == "SIMPLE_RADIAL")
-            {
-                int width = int.Parse(cameraLineSplit[2]);
-                int height = int.Parse(cameraLineSplit[3]);
-                float fx = float.Parse(cameraLineSplit[4]);
-                int cx = int.Parse(cameraLineSplit[5]);
-                int cy = int.Parse(cameraLineSplit[6]);
+            int width = int.Parse(cameraLineSplit[2]);
+            int height = int.Parse(cameraLineSplit[3]);
+            float fx = float.Parse(cameraLineSplit[4]);
+            float fy = float.Parse(cameraLineSplit[5]);
+            int cx = width / 2;
+            int cy = height / 2;
+            Vector4 k = new Vector4(
+                float.Parse(cameraLineSplit[8]),
+                float.Parse(cameraLineSplit[9]),
+                0f,
+                0f);
 
-                cameras.Add(cameraName, new CamData(cameraName, width, height, fx, cx, cy));
-            }
-            else if (cameraType == "OPENCV")
-            {
-                int width = int.Parse(cameraLineSplit[2]);
-                int height = int.Parse(cameraLineSplit[3]);
-                float fx = float.Parse(cameraLineSplit[4]);
-                float fy = float.Parse(cameraLineSplit[5]);
-                int cx = width / 2;
-                int cy = height / 2;
+            Vector2 distortion = new Vector2(
+                float.Parse(cameraLineSplit[10]),
+                float.Parse(cameraLineSplit[11]));
 
-                cameras.Add(cameraName, new CamData(cameraName, width, height, fx, cx, cy));
-            }
+            cameras.Add(cameraName, new CamData(cameraName, width, height, fx, fy, cx, cy, k, distortion));
         }
 
         // read images.txt
@@ -88,7 +91,7 @@ public class Colmap2Nerf
 
                 Quaternion rot = new Quaternion(
                     float.Parse(parts[1]),
-                    float.Parse(parts[2]), 
+                    float.Parse(parts[2]),
                     float.Parse(parts[3]),
                     float.Parse(parts[4]));
 
@@ -98,12 +101,18 @@ public class Colmap2Nerf
                 viewMatrix.Translation = pos;
                 viewMatrix = Flip(viewMatrix);
 
+                float sharpness = Sharpness(imageName);
+
                 NerfSerializer.NerfFrame nerfFrame = new NerfSerializer.NerfFrame(
                     imageName,
                     NerfSerializer.Matrix4X4toFloatArray(viewMatrix),
                     camData.width,
                     camData.height,
-                    camData.fx);
+                    camData.fx,
+                    camData.fy,
+                    camData.k,
+                    camData.distortion,
+                    sharpness);
 
                 frames.Add(nerfFrame);
             }
@@ -133,13 +142,19 @@ public class Colmap2Nerf
         return Matrix4x4.Multiply(matrix4X4, flipMat);
     }
 
-    float sharpness(string imagePath)
+    static float Sharpness(string imagePath)
     {
         Mat image = Cv2.ImRead(imagePath);
-        OutputArray output = OutputArray.Create(image);
-        Cv2.CvtColor(image, output,ColorConversionCodes.BGR2GRAY);
-        //Cv2.Laplacian(image, Cv2.CV_64F);
-        return 0;
 
+        using Mat laplacian = new Mat();
+        int kernel_size = 3;
+        int scale = 1;
+        int delta = 0;
+        int ddepth = image.Type().Depth;
+        Cv2.Laplacian(image, laplacian, ddepth, kernel_size, scale, delta);
+        Cv2.MeanStdDev(laplacian, out Scalar mean, out Scalar stddev);
+        double sharpness = stddev.Val0 * stddev.Val0;
+
+        return (float)sharpness;
     }
 }
