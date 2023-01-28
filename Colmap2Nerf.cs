@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Newtonsoft.Json;
+using OpenCvSharp;
 
 public class Colmap2Nerf
 {
@@ -85,13 +86,17 @@ public class Colmap2Nerf
 
                 string imageName = Path.Combine(ColmapFolder, imageDir, parts[9]);
 
-                Quaternion rot = new Quaternion(float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3]),
+                Quaternion rot = new Quaternion(
+                    float.Parse(parts[1]),
+                    float.Parse(parts[2]), 
+                    float.Parse(parts[3]),
                     float.Parse(parts[4]));
 
                 Vector3 pos = new Vector3(float.Parse(parts[5]), float.Parse(parts[6]), float.Parse(parts[7]));
 
                 Matrix4x4 viewMatrix = Matrix4x4.CreateFromQuaternion(rot);
                 viewMatrix.Translation = pos;
+                viewMatrix = Flip(viewMatrix);
 
                 NerfSerializer.NerfFrame nerfFrame = new NerfSerializer.NerfFrame(
                     imageName,
@@ -119,35 +124,22 @@ public class Colmap2Nerf
         File.WriteAllText(outPath, cameraJsonString);
     }
 
-    void Flip(Matrix4x4 matrix4X4)
+    static Matrix4x4 Flip(Matrix4x4 matrix4X4)
     {
-        /*
-        Matrix4x4 flip_mat = np.array([
-            [1, 0, 0, 0],
-        [0, -1, 0, 0],
-        [0, 0, -1, 0],
-        [0, 0, 0, 1]
-            ])
+        Matrix4x4 flipMat = Matrix4x4.Identity;
+        flipMat.M11 = -1;
+        flipMat.M22 = -1;
 
-        for f in out["frames"]:
-        f["transform_matrix"] = np.matmul(f["transform_matrix"], flip_mat) # flip cameras (it just works)
-        */
-    }
-
-    float variance_of_laplacian(string imagePath)
-    {
-        //return cv2.Laplacian(image, cv2.CV_64F).var()
-        return 0;
+        return Matrix4x4.Multiply(matrix4X4, flipMat);
     }
 
     float sharpness(string imagePath)
     {
-        /*
-        image = cv2.imread(imagePath)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        fm = variance_of_laplacian(gray)
-        return fm
-        */
+        Mat image = Cv2.ImRead(imagePath);
+        OutputArray output = OutputArray.Create(image);
+        Cv2.CvtColor(image, output,ColorConversionCodes.BGR2GRAY);
+        //Cv2.Laplacian(image, Cv2.CV_64F);
         return 0;
+
     }
 }
