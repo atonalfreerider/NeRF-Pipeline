@@ -95,7 +95,10 @@ public class Program
 
         ColmapRunner colmapRunner = new ColmapRunner(args.OutputFolderPath, imagesPath);
 
-        colmapRunner.RunColmapAutomatic();
+        colmapRunner.FeatureExtractor();
+        colmapRunner.Matcher();
+        colmapRunner.Mapper();
+        colmapRunner.BundleAdjuster();
         colmapRunner.Convert();
 
         Colmap2Nerf colmap2Nerf = new Colmap2Nerf(outputFolderPath);

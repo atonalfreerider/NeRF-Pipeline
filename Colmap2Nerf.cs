@@ -43,13 +43,29 @@ public class Colmap2Nerf
 
             string[] cameraLineSplit = cameraLine.Split(' ');
             string cameraName = cameraLineSplit[0];
-            int width = int.Parse(cameraLineSplit[2]);
-            int height = int.Parse(cameraLineSplit[3]);
-            float fx = float.Parse(cameraLineSplit[4]);
-            int cx = int.Parse(cameraLineSplit[5]);
-            int cy = int.Parse(cameraLineSplit[6]);
+            string cameraType = cameraLineSplit[1];
 
-            cameras.Add(cameraName, new CamData(cameraName, width, height, fx, cx, cy));
+            if (cameraType == "SIMPLE_RADIAL")
+            {
+                int width = int.Parse(cameraLineSplit[2]);
+                int height = int.Parse(cameraLineSplit[3]);
+                float fx = float.Parse(cameraLineSplit[4]);
+                int cx = int.Parse(cameraLineSplit[5]);
+                int cy = int.Parse(cameraLineSplit[6]);
+
+                cameras.Add(cameraName, new CamData(cameraName, width, height, fx, cx, cy));
+            }
+            else if (cameraType == "OPENCV")
+            {
+                int width = int.Parse(cameraLineSplit[2]);
+                int height = int.Parse(cameraLineSplit[3]);
+                float fx = float.Parse(cameraLineSplit[4]);
+                float fy = float.Parse(cameraLineSplit[5]);
+                int cx = width / 2;
+                int cy = height / 2;
+
+                cameras.Add(cameraName, new CamData(cameraName, width, height, fx, cx, cy));
+            }
         }
 
         // read images.txt
@@ -101,5 +117,37 @@ public class Colmap2Nerf
 
         string cameraJsonString = JsonConvert.SerializeObject(container, Formatting.Indented);
         File.WriteAllText(outPath, cameraJsonString);
+    }
+
+    void Flip(Matrix4x4 matrix4X4)
+    {
+        /*
+        Matrix4x4 flip_mat = np.array([
+            [1, 0, 0, 0],
+        [0, -1, 0, 0],
+        [0, 0, -1, 0],
+        [0, 0, 0, 1]
+            ])
+
+        for f in out["frames"]:
+        f["transform_matrix"] = np.matmul(f["transform_matrix"], flip_mat) # flip cameras (it just works)
+        */
+    }
+
+    float variance_of_laplacian(string imagePath)
+    {
+        //return cv2.Laplacian(image, cv2.CV_64F).var()
+        return 0;
+    }
+
+    float sharpness(string imagePath)
+    {
+        /*
+        image = cv2.imread(imagePath)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        fm = variance_of_laplacian(gray)
+        return fm
+        */
+        return 0;
     }
 }
